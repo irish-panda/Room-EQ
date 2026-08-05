@@ -35,7 +35,7 @@ export function createRoomEqAuth() {
       modelName: "room_eq_auth_session",
       cookieCache: {
         enabled: true,
-        maxAge: 30 * 60,
+        maxAge: 60,
         strategy: "compact",
       },
     },
@@ -49,7 +49,9 @@ export function createRoomEqAuth() {
     advanced: {
       database: { generateId: "uuid" },
       useSecureCookies: process.env.NODE_ENV === "production",
-      ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
+      ipAddress: {
+        ipAddressHeaders: ["x-forwarded-for", "cf-connecting-ip"],
+      },
       backgroundTasks: {
         handler: (promise) => after(promise),
       },

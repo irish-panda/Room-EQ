@@ -9,7 +9,13 @@ function safeNext() {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
-export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
+export function AuthForm({
+  mode,
+  googleEnabled,
+}: {
+  mode: "sign-in" | "sign-up";
+  googleEnabled: boolean;
+}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -97,15 +103,19 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
             ? "Create your own login first. You can create or join a business once you are inside."
             : "Log in to continue to Room EQ Assistant."}
         </p>
-        <button
-          className="button secondary auth-google"
-          type="button"
-          disabled={pending}
-          onClick={() => void signInWithGoogle()}
-        >
-          Continue with Google
-        </button>
-        <div className="auth-divider"><span>or use email</span></div>
+        {googleEnabled && (
+          <>
+            <button
+              className="button secondary auth-google"
+              type="button"
+              disabled={pending}
+              onClick={() => void signInWithGoogle()}
+            >
+              Continue with Google
+            </button>
+            <div className="auth-divider"><span>or use email</span></div>
+          </>
+        )}
         <form className="auth-form" onSubmit={(event) => void submit(event)}>
           {isSignUp && (
             <label>

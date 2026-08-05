@@ -65,9 +65,11 @@ export function getSeatPriceId(plan: PaidPlanId, cycle: BillingCycle) {
 }
 
 export function isLiveBillingEnabled() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
   return (
     process.env.STRIPE_LIVE_BILLING_ENABLED === "true" &&
-    process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") === true
+    (secretKey?.startsWith("sk_live_") === true ||
+      secretKey?.startsWith("rk_live_") === true)
   );
 }
 

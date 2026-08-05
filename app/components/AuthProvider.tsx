@@ -12,7 +12,7 @@ import {
 import { authClient } from "../../lib/auth-client";
 import { isDefaultPlatformOwnerEmail } from "../../lib/platform-owner-shared";
 
-type AccountUser = {
+export type AccountUser = {
   id: string;
   name: string;
   email: string;
@@ -70,17 +70,38 @@ async function requestOrganizations() {
   };
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+  initialUser,
+  initialOrganizations,
+  initialIsPlatformOwner = false,
+}: {
+  children: ReactNode;
+  initialUser?: AccountUser | null;
+  initialOrganizations?: AccountOrganization[];
+  initialIsPlatformOwner?: boolean;
+}) {
   const session = authClient.useSession();
+  const refetchSession = session.refetch;
   const sessionUser = (session.data?.user as AccountUser | undefined) ?? null;
   const [optimisticSignedOut, setOptimisticSignedOut] = useState(false);
-  const user = optimisticSignedOut ? null : sessionUser;
+  const user = optimisticSignedOut
+    ? null
+    : session.isPending
+      ? (initialUser ?? null)
+      : sessionUser;
   const signedInUserId = user?.id ?? null;
-  const [organizations, setOrganizations] = useState<AccountOrganization[]>([]);
+  const [organizations, setOrganizations] = useState<AccountOrganization[]>(
+    initialOrganizations ?? [],
+  );
   const [activeOrganizationId, setActiveOrganizationId] =
-    useState<string | null>(savedOrganizationId);
-  const [organizationsLoaded, setOrganizationsLoaded] = useState(false);
-  const [isPlatformOwner, setIsPlatformOwner] = useState(false);
+    useState<string | null>(() =>
+      savedOrganizationId() ?? initialOrganizations?.[0]?.id ?? null,
+    );
+  const [organizationsLoaded, setOrganizationsLoaded] = useState(
+    initialOrganizations !== undefined,
+  );
+  const [isPlatformOwner, setIsPlatformOwner] = useState(initialIsPlatformOwner);
   const [notice, setNotice] = useState("");
 
   const applyOrganizations = useCallback((next: AccountOrganization[]) => {
@@ -136,7 +157,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const load = async () => {
       if (session.isPending) return;
       if (signedInUserId) {
-        setOrganizationsLoaded(false);
         try {
           await acceptInvitation();
           if (!ignore) {
@@ -169,6 +189,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ignore = true;
     };
   }, [acceptInvitation, applyOrganizations, session.isPending, signedInUserId]);
+
+  useEffect(() => {
+    if (!signedInUserId) return;
+    const timer = window.setInterval(() => {
+      void refetchSession();
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [refetchSession, signedInUserId]);
 
   const selectOrganization = useCallback((organizationId: string) => {
     window.localStorage.setItem(storageKey, organizationId);
@@ -231,7 +259,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       organizations.find((organization) => organization.id === activeOrganizationId) ??
       null;
     return {
-      isLoaded: !session.isPending,
+      isLoaded: initialUser !== undefined || !session.isPending,
       isSignedIn: Boolean(user),
       user,
       organizations,
