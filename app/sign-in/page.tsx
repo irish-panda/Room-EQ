@@ -1,5 +1,8 @@
 import { AuthForm } from "../components/AuthForm";
 
 export default function SignInPage() {
-  return <AuthForm mode="sign-in" />;
+  const googleEnabled = Boolean(
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+  );
+  return <AuthForm mode="sign-in" googleEnabled={googleEnabled} />;
 }

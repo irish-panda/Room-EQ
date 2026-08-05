@@ -23,7 +23,7 @@ export function LegalPage({
           <span className="eyebrow">{eyebrow}</span>
           <h1>{title}</h1>
           <p>{intro}</p>
-          <small>Last updated 4 August 2026</small>
+          <small>Last updated 5 August 2026</small>
         </header>
         <div className="legal-content">{children}</div>
       </article>

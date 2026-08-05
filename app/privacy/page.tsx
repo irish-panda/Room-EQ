@@ -61,8 +61,8 @@ export default function PrivacyPage() {
         <p>
           We use service providers to run the product, including Supabase for isolated
           Room EQ account data and server functions, Google for optional sign-in,
-          Stripe for billing, Resend for account-recovery email, and OpenAI Sites and
-          Cloudflare infrastructure for hosting and delivery. These providers may
+          Stripe for billing, Resend for account-recovery email, and Vercel for
+          hosting and delivery. These providers may
           process information outside Australia, including in the United States and
           other regions where they or their subprocessors operate. We disclose only
           the information needed for them to provide their services.

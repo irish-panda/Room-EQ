@@ -43,6 +43,7 @@ import { AccountControls } from "./components/AccountControls";
 import { useAccount } from "./components/AuthProvider";
 import { useBilling } from "./components/BillingProvider";
 import { LiveSpectrum } from "./components/LiveSpectrum";
+import { InstallAppControl } from "./components/PwaProvider";
 import { SignalGeneratorPanel } from "./components/SignalGeneratorPanel";
 
 const navigation: Array<{
@@ -1771,7 +1772,7 @@ function PricingScreen({
         {pricingPlans.map((plan) => {
           const price = cycle === "monthly" ? plan.monthlyPrice : plan.annualPrice;
           const currentPlanId = !isSignedIn
-            ? null
+            ? "free"
             : isPlatformOwner
               ? "business"
               : hasActiveBilling && billing?.plan
@@ -1786,7 +1787,7 @@ function PricingScreen({
               <div className="plan-flags">
                 {isCurrentPlan && (
                   <span className="current-plan-flag">
-                    Current plan
+                    {isSignedIn ? "Current plan" : "Current access"}
                   </span>
                 )}
                 {plan.featured && <span className="plan-badge">Best for most teams</span>}
@@ -1925,7 +1926,13 @@ function PricingScreen({
   );
 }
 
-export function RoomEqAssistant({ liveBillingEnabled }: { liveBillingEnabled: boolean }) {
+export function RoomEqAssistant({
+  googleAuthEnabled,
+  liveBillingEnabled,
+}: {
+  googleAuthEnabled: boolean;
+  liveBillingEnabled: boolean;
+}) {
   const {
     isLoaded: authLoaded,
     isSignedIn,
@@ -1952,6 +1959,7 @@ export function RoomEqAssistant({ liveBillingEnabled }: { liveBillingEnabled: bo
   const [saved, setSaved] = useState(false);
   const [toast, setToast] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pendingScreen, setPendingScreen] = useState<Screen | null>(null);
 
   const reloadRooms = useCallback(async () => {
     try {
@@ -1975,16 +1983,6 @@ export function RoomEqAssistant({ liveBillingEnabled }: { liveBillingEnabled: bo
   }, [reloadRooms]);
 
   useEffect(() => {
-    const fromHash = () => {
-      const value = window.location.hash.replace("#", "") as Screen;
-      if (navigation.some((item) => item.id === value)) setScreen(value);
-    };
-    fromHash();
-    window.addEventListener("hashchange", fromHash);
-    return () => window.removeEventListener("hashchange", fromHash);
-  }, []);
-
-  useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(""), 3200);
     return () => window.clearTimeout(timer);
@@ -2004,12 +2002,49 @@ export function RoomEqAssistant({ liveBillingEnabled }: { liveBillingEnabled: bo
     };
   }, [mobileMenuOpen]);
 
-  const navigate = (next: Screen) => {
+  const accessCheckPending = useCallback(
+    (next: Screen) => {
+      const requiresPaidAccess = paidScreens.has(next);
+      const requiresAccount = requiresPaidAccess || accountScreens.has(next);
+      return (
+        (requiresAccount && !authLoaded) ||
+        (requiresPaidAccess &&
+          isSignedIn &&
+          !isPlatformOwner &&
+          Boolean(orgId) &&
+          billingLoading)
+      );
+    }, [authLoaded, billingLoading, isPlatformOwner, isSignedIn, orgId],
+  );
+
+  const navigate = useCallback((next: Screen) => {
     setMobileMenuOpen(false);
+    if (accessCheckPending(next)) {
+      setPendingScreen(next);
+      return;
+    }
+    setPendingScreen(null);
     setScreen(next);
-    window.location.hash = next;
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+    if (window.location.hash !== `#${next}`) window.location.hash = next;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  }, [accessCheckPending]);
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+
+  useEffect(() => {
+    const fromHash = () => {
+      const value = window.location.hash.replace("#", "") as Screen;
+      if (navigation.some((item) => item.id === value)) navigateRef.current(value);
+    };
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    return () => window.removeEventListener("hashchange", fromHash);
+  }, []);
+
+  useEffect(() => {
+    if (pendingScreen && !accessCheckPending(pendingScreen)) navigate(pendingScreen);
+  }, [accessCheckPending, navigate, pendingScreen]);
 
   const startFreshAnalysis = () => {
     setComparisonBase(undefined);
@@ -2103,24 +2138,6 @@ export function RoomEqAssistant({ liveBillingEnabled }: { liveBillingEnabled: bo
     const requiresAccount = requiresPaidAccess || accountScreens.has(screen);
     if (
       requiresAccount &&
-      (!authLoaded ||
-        (requiresPaidAccess &&
-          isSignedIn &&
-          !isPlatformOwner &&
-          orgId &&
-          billingLoading))
-    ) {
-      return (
-        <section className="account-required-card" aria-busy="true">
-          <span className="eyebrow">Checking access</span>
-          <h2>Opening your account…</h2>
-          <p>Confirming the access available to this login.</p>
-        </section>
-      );
-    }
-
-    if (
-      requiresAccount &&
       !isSignedIn &&
       authLoaded
     ) {
@@ -2137,8 +2154,12 @@ export function RoomEqAssistant({ liveBillingEnabled }: { liveBillingEnabled: bo
           </h2>
           <p>
             {freeAccountFeature
-              ? "There is no charge. Use Google or your own email and password."
-              : "Use Google or your own email and password. Team access gives each worker their own invited login."}
+              ? googleAuthEnabled
+                ? "There is no charge. Use Google or your own email and password."
+                : "There is no charge. Use your own email and password."
+              : googleAuthEnabled
+                ? "Use Google or your own email and password. Team access gives each worker their own invited login."
+                : "Use your own email and password. Team access gives each worker their own invited login."}
           </p>
           <div className="button-row">
             <a
@@ -2460,7 +2481,16 @@ export function RoomEqAssistant({ liveBillingEnabled }: { liveBillingEnabled: bo
                   </button>
                 ))}
             </nav>
-            <p>Audio analysis stays on this device.</p>
+            <div className="mobile-menu-utilities">
+              <InstallAppControl compact />
+              <nav aria-label="Legal and support">
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+                <a href="/refunds">Refunds</a>
+                <a href="/support">Support</a>
+              </nav>
+              <p>Audio analysis stays on this device.</p>
+            </div>
           </section>
         </div>
       )}

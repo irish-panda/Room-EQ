@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Room EQ">
+  <rect width="512" height="512" rx="112" fill="#101715"/>
+  <circle cx="256" cy="256" r="156" fill="none" stroke="#d7ff57" stroke-width="18"/>
+  <path d="M158 278v-44M207 329V183M256 302v-92M305 354V158M354 288v-64" fill="none" stroke="#f7f5ee" stroke-width="24" stroke-linecap="round"/>
+</svg>

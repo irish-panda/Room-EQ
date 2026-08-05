@@ -22,10 +22,12 @@
 }
 
 html {
+  min-height: 100%;
   scroll-behavior: smooth;
 }
 
 body {
+  min-height: 100%;
   margin: 0;
   background: var(--paper);
   color: var(--ink);
@@ -118,6 +120,7 @@ strong {
 
 .app-shell {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .sidebar {
@@ -314,6 +317,7 @@ strong {
 
 .app-main {
   min-height: 100vh;
+  min-height: 100dvh;
   margin-left: 246px;
 }
 
@@ -4136,6 +4140,7 @@ strong {
 
   body {
     overflow-x: hidden;
+    overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -4152,9 +4157,15 @@ strong {
   }
 
   .topbar {
-    height: 64px;
+    position: sticky;
+    z-index: 100;
+    top: 0;
+    height: calc(64px + env(safe-area-inset-top));
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
+    padding-top: env(safe-area-inset-top);
     padding-right: max(16px, env(safe-area-inset-right));
     padding-left: max(16px, env(safe-area-inset-left));
+    backdrop-filter: blur(14px);
   }
 
   .settings-shortcut {
@@ -4366,10 +4377,44 @@ strong {
     text-align: center;
   }
 
+  .mobile-menu-utilities {
+    display: grid;
+    gap: 11px;
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+  }
+
+  .mobile-menu-utilities > nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 16px;
+  }
+
+  .mobile-menu-utilities a {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .mobile-menu-utilities > p,
+  .install-app-hint.compact {
+    margin: 0;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .install-app-button.compact {
+    width: 100%;
+    min-height: 44px;
+  }
+
   .stepper {
     position: sticky;
     z-index: 20;
-    top: 64px;
+    top: calc(64px + env(safe-area-inset-top));
     overflow-x: auto;
     grid-template-columns: repeat(4, minmax(90px, 1fr));
     scrollbar-width: none;
@@ -4389,7 +4434,7 @@ strong {
   }
 
   .app-footer {
-    padding-bottom: calc(94px + env(safe-area-inset-bottom));
+    display: none;
   }
 }
 
@@ -4401,7 +4446,7 @@ strong {
   }
 
   .topbar {
-    height: 60px;
+    height: calc(60px + env(safe-area-inset-top));
   }
 
   .mobile-brand {
@@ -4592,7 +4637,7 @@ strong {
   }
 
   .stepper {
-    top: 60px;
+    top: calc(60px + env(safe-area-inset-top));
     margin-right: -16px;
     margin-left: -16px;
     border-right: 0;
@@ -4829,5 +4874,11 @@ strong {
 
   .toast {
     bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 900px) {
+  .app-shell {
+    overscroll-behavior: none;
   }
 }

@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { authClient } from "../../lib/auth-client";
 import { useAccount } from "./AuthProvider";
 
 export type BillingSummary = {
@@ -96,6 +97,23 @@ export function BillingProvider({ children }: { children: ReactNode }) {
       ignore = true;
     };
   }, [activeOrganizationId, isLoaded, isPlatformOwner, isSignedIn]);
+
+  useEffect(() => {
+    if (
+      !activeOrganizationId ||
+      state?.organizationId !== activeOrganizationId ||
+      state.billing?.plan !== "solo" ||
+      !["active", "trialing", "past_due"].includes(state.billing.status)
+    ) {
+      return;
+    }
+
+    const key = `room-eq-solo-session-enforced:${activeOrganizationId}`;
+    if (window.sessionStorage.getItem(key)) return;
+    void authClient.revokeOtherSessions().then(({ error }) => {
+      if (!error) window.sessionStorage.setItem(key, "true");
+    });
+  }, [activeOrganizationId, state]);
 
   const refresh = useCallback(async () => {
     if (!activeOrganizationId) return;
