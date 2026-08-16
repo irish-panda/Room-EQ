@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { PwaProvider } from "./components/PwaProvider";
+import { GoogleAnalytics } from "./components/GoogleAnalytics";
 import "./globals.css";
 
 const title = "Room EQ Assistant — Room audio analysis";
@@ -70,6 +71,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <PwaProvider>{children}</PwaProvider>
+        <GoogleAnalytics />
       </body>
     </html>
   );
